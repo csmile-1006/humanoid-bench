@@ -1,9 +1,6 @@
-import os
 
 import numpy as np
-import mujoco
-import gymnasium as gym
-from gymnasium.spaces import Box
+from gymnasium.spaces import Box, Dict
 from dm_control.utils import rewards
 
 from humanoid_bench.tasks import Task
@@ -38,10 +35,21 @@ class Walk(Task):
             _CRAWL_HEIGHT = 0.6
 
     @property
-    def observation_space(self):
-        return Box(
-            low=-np.inf, high=np.inf, shape=(self.robot.dof * 2 - 1,), dtype=np.float64
+    def reward_space(self):
+        return Dict(
+            {
+                "small_control": Box(low=1e-10, high=1, shape=(), dtype=float),
+                "stand_reward": Box(low=1e-10, high=1, shape=(), dtype=float),
+                "dont_move": Box(low=1e-10, high=1, shape=(), dtype=float),
+                "move": Box(low=1e-10, high=1, shape=(), dtype=float),
+                "standing": Box(low=1e-10, high=1, shape=(), dtype=float),
+                "upright": Box(low=1e-10, high=1, shape=(), dtype=float),
+            }
         )
+
+    @property
+    def observation_space(self):
+        return Box(low=-np.inf, high=np.inf, shape=(self.robot.dof * 2 - 1,), dtype=float)
 
     def get_reward(self):
         standing = rewards.tolerance(
@@ -71,6 +79,7 @@ class Walk(Task):
                 "small_control": small_control,
                 "stand_reward": stand_reward,
                 "dont_move": dont_move,
+                "move": 0.0,
                 "standing": standing,
                 "upright": upright,
             }
@@ -88,6 +97,7 @@ class Walk(Task):
             return reward, {
                 "stand_reward": stand_reward,
                 "small_control": small_control,
+                "dont_move": 0.0,
                 "move": move,
                 "standing": standing,
                 "upright": upright,
@@ -310,7 +320,7 @@ class Sit(Task):
             low=-np.inf,
             high=np.inf,
             shape=(self.robot.dof * 2 - 1 + self.dof + self.vels,),
-            dtype=np.float64,
+            dtype=float,
         )
 
     def get_reward(self):
